@@ -1,0 +1,48 @@
+services:
+  pocket-siem:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: pocket-siem
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      # Persistent SQLite database
+      - soc_data:/app/data
+    ports:
+      - "127.0.0.1:8080:8080"
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Optional: PostgreSQL backend (uncomment to use Postgres instead of SQLite)
+  # postgres:
+  #   image: postgres:16-alpine
+  #   container_name: soc-postgres
+  #   restart: unless-stopped
+  #   environment:
+  #     POSTGRES_DB: soc_bot
+  #     POSTGRES_USER: socbot
+  #     POSTGRES_PASSWORD_FILE: /run/secrets/pg_password
+  #   volumes:
+  #     - pg_data:/var/lib/postgresql/data
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U socbot -d soc_bot"]
+  #     interval: 10s
+  #     retries: 5
+
+volumes:
+  soc_data:
+    driver: local
+  # pg_data:
+  #   driver: local
